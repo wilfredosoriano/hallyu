@@ -1,0 +1,132 @@
+import { useEffect, useRef, useState } from 'react';
+import { starParts, cleanText, legalLinks, searchLinks, displayTitle } from '../lib/format.js';
+import { fetchRecommendations } from '../lib/anilist.js';
+
+export default function DetailSheet({ media, onClose, onOpenRelated, onSave, isSaved }) {
+  const closeRef = useRef(null);
+  const [related, setRelated] = useState(null);
+
+  useEffect(() => {
+    closeRef.current?.focus();
+    const onKey = (e) => e.key === 'Escape' && onClose();
+    document.addEventListener('keydown', onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [onClose]);
+
+  useEffect(() => {
+    let live = true;
+    setRelated(null);
+    fetchRecommendations(media.id)
+      .then((list) => { if (live) setRelated(list.slice(0, 6)); })
+      .catch(() => { if (live) setRelated([]); });
+    return () => { live = false; };
+  }, [media.id]);
+
+  const title = displayTitle(media);
+  const stars = starParts(media.averageScore);
+  const studio = media.studios?.nodes?.[0]?.name;
+  const links = legalLinks(media);
+  const directSites = new Set(links.map((l) => l.site.toLowerCase()));
+  const searches = searchLinks(title).filter((s) => !directSites.has(s.site.toLowerCase()));
+  const synopsis = cleanText(media.description);
+  const saved = isSaved?.(media.id);
+
+  const facts = [
+    media.episodes && `${media.episodes} episodes`,
+    (media.format || '').replace('_', ' ').toLowerCase(),
+    media.seasonYear,
+    studio,
+    media.status && media.status.toLowerCase().replace('_', ' '),
+  ].filter(Boolean);
+
+  return (
+    <div className="scrim" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="sheet" role="dialog" aria-modal="true" aria-label={title}>
+        <div className="sheet-head">
+          <div>
+            <h3 className="display">{title}</h3>
+            {media.title.native && (
+              <div className="native jp" style={{ marginTop: 5 }}>{media.title.native}</div>
+            )}
+          </div>
+          <button className="x" onClick={onClose} ref={closeRef} aria-label="Close details">
+            ✕
+          </button>
+        </div>
+
+        <div className="sheet-body">
+          <div>
+            <img className="cover" src={media.coverImage.large} alt={`Cover art for ${title}`} />
+            {stars && (
+              <div style={{ marginTop: 12 }}>
+                <span className="stars">{stars.glyphs}</span>{' '}
+                <span className="num">{stars.value} · {stars.raw}/100</span>
+              </div>
+            )}
+            {onSave && (
+              <button className={`btn ghost sheet-save${saved ? ' on' : ''}`} onClick={() => onSave(media)}>
+                {saved ? '✓ Saved' : '+ Want to watch'}
+              </button>
+            )}
+          </div>
+
+          <div>
+            <div className="taglist">
+              {(media.genres || []).map((g) => (
+                <span key={g}>{g}</span>
+              ))}
+            </div>
+
+            <p className="num">{facts.join(' · ')}</p>
+            <p className="synopsis">{synopsis || 'No synopsis on record.'}</p>
+
+            <div className="watch">
+              <p className="mono" style={{ marginBottom: 6 }}>
+                Watch it legally
+              </p>
+              {links.map((l) => (
+                <a key={l.url} href={l.url} target="_blank" rel="noopener noreferrer">
+                  {l.site}
+                </a>
+              ))}
+              {searches.map((l) => (
+                <a key={l.url} href={l.url} target="_blank" rel="noopener noreferrer" className="search-link">
+                  Search {l.site}
+                </a>
+              ))}
+              {links.length === 0 && (
+                <a href={media.siteUrl} target="_blank" rel="noopener noreferrer">
+                  Check AniList for platforms
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {related !== null && related.length > 0 && (
+          <div className="related">
+            <p className="mono" style={{ padding: '0 20px' }}>More like this</p>
+            <div className="related-row">
+              {related.map((m) => (
+                <button
+                  key={m.id}
+                  className="related-item"
+                  onClick={() => onOpenRelated ? onOpenRelated(m) : null}
+                  aria-label={`Open details for ${displayTitle(m)}`}
+                >
+                  <img src={m.coverImage.large} alt="" loading="lazy" />
+                  <span>{displayTitle(m)}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

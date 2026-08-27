@@ -1,0 +1,12 @@
+{
+  "name": "Tsugi — what to watch next",
+  "short_name": "Tsugi",
+  "description": "Anime discovery with AI recommendations grounded in the real AniList catalog.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0f",
+  "theme_color": "#0a0a0f",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
