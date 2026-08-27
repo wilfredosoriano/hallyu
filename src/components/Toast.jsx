@@ -3,7 +3,11 @@ export default function ToastStack({ toasts, onDismiss }) {
   return (
     <div className="toasts" role="status" aria-live="polite">
       {toasts.map((t) => (
-        <button key={t.id} className="toast" onClick={() => onDismiss(t.id)}>
+        <button
+          key={t.id}
+          className={`toast${t.leaving ? ' leaving' : ''}`}
+          onClick={() => onDismiss(t.id)}
+        >
           {t.text}
         </button>
       ))}

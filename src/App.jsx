@@ -1,19 +1,35 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Masthead from './components/Masthead.jsx';
 import AskPanel from './components/AskPanel.jsx';
 import DetailSheet from './components/DetailSheet.jsx';
 import ToastStack from './components/Toast.jsx';
 import { Grid, Skeletons, Loading, Note, SectionHead, SortControl } from './components/Grid.jsx';
-import { fetchGrid, fetchCandidates, toPromptRows } from './lib/anilist.js';
+import { fetchGrid, fetchCandidates, fetchById, toPromptRows, SORTS } from './lib/anilist.js';
 import { useSaved } from './hooks/useSaved.js';
 import { useTheme } from './hooks/useTheme.js';
 import { useToast } from './hooks/useToast.js';
 import { displayTitle } from './lib/format.js';
 
+const SORT_VALUES = new Set(SORTS.map((s) => s.value));
+
+function readUrlState() {
+  const params = new URLSearchParams(window.location.search);
+  const sort = params.get('sort');
+  return {
+    search: params.get('search') || '',
+    genre: params.get('genre') || null,
+    sort: sort && SORT_VALUES.has(sort) ? sort : 'TRENDING_DESC',
+    id: params.get('id'),
+  };
+}
+
 export default function App() {
-  const [genre, setGenre] = useState(null);
-  const [search, setSearch] = useState('');
-  const [sort, setSort] = useState('TRENDING_DESC');
+  const initialUrl = useRef(readUrlState()).current;
+  const deepLinkId = useRef(initialUrl.id);
+
+  const [genre, setGenre] = useState(initialUrl.search ? null : initialUrl.genre);
+  const [search, setSearch] = useState(initialUrl.search);
+  const [sort, setSort] = useState(initialUrl.sort);
   const [gridItems, setGridItems] = useState([]);
   const [gridState, setGridState] = useState('loading'); // loading | ready | error
   const [gridError, setGridError] = useState('');
@@ -22,7 +38,10 @@ export default function App() {
   const [loadingMore, setLoadingMore] = useState(false);
 
   const [question, setQuestion] = useState('');
-  const [answer, setAnswer] = useState(null); // { intro, picks, reference, degraded }
+  const [followUp, setFollowUp] = useState('');
+  const [askedQuestion, setAskedQuestion] = useState('');
+  const [askPool, setAskPool] = useState(null); // the candidate pool behind the current answer
+  const [answer, setAnswer] = useState(null); // { intro, picks, reference, degraded, ranked }
   const [asking, setAsking] = useState(false);
   const [askStage, setAskStage] = useState('');
   const [askError, setAskError] = useState('');
@@ -37,6 +56,28 @@ export default function App() {
     toggle(media);
     pushToast(wasSaved ? `Removed “${displayTitle(media)}”` : `Saved “${displayTitle(media)}” to watch`);
   }, [isSaved, toggle, pushToast]);
+
+  /* ── deep link: open a title straight from a shared URL ────── */
+  useEffect(() => {
+    const id = deepLinkId.current;
+    if (!id) return;
+    fetchById(Number(id))
+      .then((media) => { if (media) setOpen(media); })
+      .catch(() => {})
+      .finally(() => { deepLinkId.current = null; });
+  }, []);
+
+  /* ── keep the URL shareable/bookmarkable ────────────────────── */
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (search) params.set('search', search);
+    else if (genre) params.set('genre', genre);
+    if (sort !== 'TRENDING_DESC') params.set('sort', sort);
+    if (open) params.set('id', open.id);
+    else if (deepLinkId.current) params.set('id', deepLinkId.current);
+    const qs = params.toString();
+    window.history.replaceState(null, '', qs ? `?${qs}` : window.location.pathname);
+  }, [search, genre, sort, open]);
 
   /* ── browse ─────────────────────────────────────────────── */
   const load = useCallback(async ({ genre = null, search = '', sort = 'TRENDING_DESC' }) => {
@@ -80,6 +121,42 @@ export default function App() {
       : 'Trending now';
 
   /* ── ask ────────────────────────────────────────────────── */
+  async function rank(requestText, pool, reference) {
+    let intro = '';
+    let picks = pool.slice(0, 6);
+    let degraded = '';
+
+    try {
+      const res = await fetch('/api/recommend', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: requestText, pool: toPromptRows(pool) }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+
+      const byId = new Map(pool.map((m) => [m.id, m]));
+      const resolved = data.picks
+        .map((p) => {
+          const media = byId.get(p.id);
+          return media ? { ...media, _why: p.why } : null;
+        })
+        .filter(Boolean);
+
+      if (resolved.length) {
+        intro = data.intro;
+        picks = resolved;
+      } else {
+        degraded = 'The model returned nothing usable. Showing the closest catalog matches instead.';
+      }
+    } catch (err) {
+      degraded = err.message;
+    }
+
+    setAnswer({ intro, picks, reference, degraded, ranked: !degraded });
+  }
+
   async function ask() {
     const q = question.trim();
     if (!q) return;
@@ -87,6 +164,8 @@ export default function App() {
     setAsking(true);
     setAskError('');
     setAnswer(null);
+    setAskPool(null);
+    setFollowUp('');
     setAskStage('Pulling candidates from AniList');
 
     try {
@@ -98,42 +177,30 @@ export default function App() {
       }
 
       setAskStage(`Ranking ${pool.length} candidates`);
-
-      let intro = '';
-      let picks = pool.slice(0, 6);
-      let degraded = '';
-
-      try {
-        const res = await fetch('/api/recommend', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ question: q, pool: toPromptRows(pool) }),
-        });
-
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
-
-        const byId = new Map(pool.map((m) => [m.id, m]));
-        const resolved = data.picks
-          .map((p) => {
-            const media = byId.get(p.id);
-            return media ? { ...media, _why: p.why } : null;
-          })
-          .filter(Boolean);
-
-        if (resolved.length) {
-          intro = data.intro;
-          picks = resolved;
-        } else {
-          degraded = 'The model returned nothing usable. Showing the closest catalog matches instead.';
-        }
-      } catch (err) {
-        degraded = err.message;
-      }
-
-      setAnswer({ intro, picks, reference, degraded, ranked: !degraded });
+      setAskedQuestion(q);
+      setAskPool(pool);
+      await rank(q, pool, reference);
     } catch (err) {
       setAskError(err.message);
+    } finally {
+      setAsking(false);
+      setAskStage('');
+    }
+  }
+
+  /* Refines the SAME candidate pool instead of pulling a fresh one from
+     AniList — cheaper, and lets "more like #3, but shorter" actually work
+     against what's already on screen. */
+  async function refine() {
+    const q = followUp.trim();
+    if (!q || !askPool) return;
+
+    setAsking(true);
+    setAskStage('Refining picks');
+    try {
+      const combined = `Original request: ${askedQuestion}\nFollow-up: ${q}`;
+      await rank(combined, askPool, answer?.reference ?? null);
+      setFollowUp('');
     } finally {
       setAsking(false);
       setAskStage('');
@@ -180,37 +247,59 @@ export default function App() {
               onSave={onSave}
               isSaved={isSaved}
             />
+
+            {askPool && (
+              <div className="refine">
+                <input
+                  type="text"
+                  value={followUp}
+                  onChange={(e) => setFollowUp(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && refine()}
+                  placeholder="Refine these picks — e.g. “more like #3, but shorter”"
+                  aria-label="Refine these recommendations"
+                  disabled={asking}
+                />
+                <button className="btn ghost" onClick={refine} disabled={asking || !followUp.trim()}>
+                  Refine
+                </button>
+              </div>
+            )}
           </section>
         )}
 
         <SectionHead
           title={gridTitle}
-          count={gridState === 'ready' ? `${gridItems.length} titles` : null}
+          count={gridItems.length > 0 ? `${gridItems.length} titles` : null}
         >
           {!search && (
             <SortControl value={sort} onChange={setSort} />
           )}
         </SectionHead>
 
-        {gridState === 'loading' && <Skeletons />}
+        {gridState === 'loading' && gridItems.length === 0 && <Skeletons />}
         {gridState === 'error' && (
-          <Note error>Couldn’t reach AniList — {gridError} Try again in a moment.</Note>
+          <Note error>
+            Couldn’t reach AniList — {gridError}{' '}
+            <button className="retry-link" onClick={() => load({ genre, search, sort })}>Try again</button>
+          </Note>
         )}
-        {gridState === 'ready' &&
-          (gridItems.length ? (
-            <>
+        {gridItems.length > 0 && (gridState === 'ready' || gridState === 'loading') && (
+          <>
+            <div className={`grid-fade${gridState === 'loading' ? ' dim' : ''}`}>
               <Grid items={gridItems} onOpen={setOpen} onSave={onSave} isSaved={isSaved} />
-              {hasMore && (
-                <div className="more">
-                  <button className="btn ghost" onClick={loadMore} disabled={loadingMore}>
-                    {loadingMore ? 'Loading…' : 'Load more'}
-                  </button>
-                </div>
-              )}
-            </>
-          ) : (
-            <Note>Nothing matched that. Try a different spelling or browse a genre.</Note>
-          ))}
+            </div>
+            {hasMore && gridState === 'ready' && (
+              <div className="more">
+                <button className="btn ghost" onClick={loadMore} disabled={loadingMore}>
+                  {loadingMore ? 'Loading…' : 'Load more'}
+                </button>
+              </div>
+            )}
+          </>
+        )}
+        {gridState === 'ready' && gridItems.length === 0 && (
+          <Note>Nothing matched that. Try a different spelling or browse a genre.</Note>
+        )}
 
         {saved.length > 0 && (
           <div id="saved">

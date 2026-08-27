@@ -35,6 +35,10 @@ export default function DetailSheet({ media, onClose, onOpenRelated, onSave, isS
   const searches = searchLinks(title).filter((s) => !directSites.has(s.site.toLowerCase()));
   const synopsis = cleanText(media.description);
   const saved = isSaved?.(media.id);
+  const trailerUrl =
+    media.trailer?.site === 'youtube' ? `https://www.youtube.com/watch?v=${media.trailer.id}`
+    : media.trailer?.site === 'dailymotion' ? `https://www.dailymotion.com/video/${media.trailer.id}`
+    : null;
 
   const facts = [
     media.episodes && `${media.episodes} episodes`,
@@ -73,6 +77,16 @@ export default function DetailSheet({ media, onClose, onOpenRelated, onSave, isS
                 {saved ? '✓ Saved' : '+ Want to watch'}
               </button>
             )}
+            {trailerUrl && (
+              <a
+                className="btn ghost sheet-save trailer-link"
+                href={trailerUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                ▶ Trailer
+              </a>
+            )}
           </div>
 
           <div>
@@ -87,7 +101,7 @@ export default function DetailSheet({ media, onClose, onOpenRelated, onSave, isS
 
             <div className="watch">
               <p className="mono" style={{ marginBottom: 6 }}>
-                Watch it legally
+                Watch it here
               </p>
               {links.map((l) => (
                 <a key={l.url} href={l.url} target="_blank" rel="noopener noreferrer">

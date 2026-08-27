@@ -333,6 +333,30 @@ main.wrap { padding-bottom: calc(56px + env(safe-area-inset-bottom)); }
 .sortctl select:hover { border-color: var(--accent); }
 
 .more { display: flex; justify-content: center; margin: 30px 0 48px; }
+
+/* Crossfade instead of a hard skeleton flash when genre/sort changes. */
+.grid-fade { transition: opacity var(--dur-2) var(--ease); }
+.grid-fade.dim { opacity: 0.35; pointer-events: none; }
+
+.retry-link {
+  font-weight: 700; text-decoration: underline; text-underline-offset: 2px;
+  color: inherit;
+}
+.retry-link:hover { color: var(--text); }
+
+/* ── refine: a follow-up on the same candidate pool ────────── */
+.refine {
+  display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap;
+}
+.refine input {
+  flex: 1; min-width: 200px; border-radius: 999px; border: 1px solid var(--border);
+  background: var(--bg-elevated); padding: 10px 16px; font-size: 0.88rem; outline: none;
+  transition: border-color var(--dur-1) var(--ease);
+}
+.refine input:focus { border-color: var(--accent); }
+.refine input::placeholder { color: var(--text-faint); }
+.refine input:disabled { opacity: 0.6; }
+.refine .btn { padding: 10px 20px; font-size: 0.85rem; }
 .btn.ghost {
   background: var(--bg-elevated); color: var(--text); border: 1px solid var(--border); box-shadow: none;
 }
@@ -433,6 +457,7 @@ main.wrap { padding-bottom: calc(56px + env(safe-area-inset-bottom)); }
   width: 100%; margin-top: 14px; padding: 11px 12px; font-size: 0.82rem;
 }
 .sheet-save.on { background: var(--bg-elevated-2); color: var(--text); box-shadow: none; }
+.trailer-link { display: block; text-align: center; text-decoration: none; }
 
 .related { border-top: 1px solid var(--border); padding: 18px 0; }
 .related-row {
@@ -486,7 +511,7 @@ main.wrap { padding-bottom: calc(56px + env(safe-area-inset-bottom)); }
 /* ── states ─────────────────────────────────────────────── */
 .note {
   padding: 16px 18px; border-radius: var(--radius); background: var(--bg-elevated); border: 1px solid var(--border);
-  color: var(--text-soft);
+  color: var(--text-soft); margin: 18px 0;
 }
 .note strong { font-weight: 800; color: var(--text); }
 .note.err { border-color: var(--danger); background: var(--danger-wash); color: var(--text); }
@@ -523,9 +548,14 @@ main.wrap { padding-bottom: calc(56px + env(safe-area-inset-bottom)); }
   backdrop-filter: blur(10px);
 }
 .toast:hover { opacity: 0.85; }
+.toast.leaving { animation: toast-out 0.22s var(--ease) both; }
 @keyframes toast-in {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
+}
+@keyframes toast-out {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to { opacity: 0; transform: translateY(6px) scale(0.94); }
 }
 
 footer { border-top: 1px solid var(--border); margin-top: 52px; padding: 24px 0 calc(34px + env(safe-area-inset-bottom)); color: var(--text-faint); font-size: 0.85rem; }

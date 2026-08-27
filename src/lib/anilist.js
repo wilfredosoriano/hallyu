@@ -20,6 +20,7 @@ const MEDIA_FIELDS = `
   description(asHtml: false)
   studios(isMain: true) { nodes { name } }
   externalLinks { site url }
+  trailer { id site }
 `;
 
 export const GENRES = [
