@@ -38,6 +38,8 @@ export const SEARCH_PLATFORMS = [
   { site: 'Crunchyroll', url: (q) => `https://www.crunchyroll.com/search?q=${encodeURIComponent(q)}` },
   { site: 'Netflix', url: (q) => `https://www.netflix.com/search?q=${encodeURIComponent(q)}` },
   { site: 'Prime Video', url: (q) => `https://www.amazon.com/s?k=${encodeURIComponent(q)}&i=instant-video` },
+  { site: 'Anime BD', url: (q) => `https://anibd.app/?s=${encodeURIComponent(q)}` },
+  { site: 'Anikoto TV', url: (q) => `https://anikototv.to/filter?keyword=${encodeURIComponent(q)}` },
 ];
 
 export function searchLinks(title) {
