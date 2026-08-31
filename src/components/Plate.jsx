@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Bookmark } from 'lucide-react';
 import { starParts, displayTitle, cleanText } from '../lib/format.js';
 import { useInView } from '../hooks/useInView.js';
 
@@ -40,9 +41,7 @@ export default function Plate({ media, rank, index = 0, caption, saved, onOpen, 
           aria-pressed={saved}
           aria-label={`${saved ? 'Remove' : 'Add'} ${title} ${saved ? 'from' : 'to'} want-to-watch`}
         >
-          <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
-            <path d="M2.5 2h9v10l-4.5-3-4.5 3z" fill={saved ? '#fff' : 'none'} stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
-          </svg>
+          <Bookmark size={14} strokeWidth={2} fill={saved ? 'currentColor' : 'none'} />
         </button>
       </div>
 

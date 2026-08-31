@@ -26,6 +26,7 @@ function readUrlState() {
 export default function App() {
   const initialUrl = useRef(readUrlState()).current;
   const deepLinkId = useRef(initialUrl.id);
+  const historyOpenId = useRef(initialUrl.id ? Number(initialUrl.id) : null);
 
   const [genre, setGenre] = useState(initialUrl.search ? null : initialUrl.genre);
   const [search, setSearch] = useState(initialUrl.search);
@@ -76,8 +77,39 @@ export default function App() {
     if (open) params.set('id', open.id);
     else if (deepLinkId.current) params.set('id', deepLinkId.current);
     const qs = params.toString();
-    window.history.replaceState(null, '', qs ? `?${qs}` : window.location.pathname);
+    const url = qs ? `?${qs}` : window.location.pathname;
+
+    // Opening a title pushes a real history entry, so the browser/device
+    // Back button closes it on the first press instead of navigating away
+    // (replaceState alone leaves nothing for Back to undo). Closing it or
+    // changing genre/search/sort just corrects the current entry in place.
+    const openId = open ? open.id : null;
+    if (openId != null && openId !== historyOpenId.current) {
+      window.history.pushState(null, '', url);
+    } else {
+      window.history.replaceState(null, '', url);
+    }
+    historyOpenId.current = openId;
   }, [search, genre, sort, open]);
+
+  /* Back/forward should close (or restore) the detail sheet, not just
+     leave it hanging while the URL underneath it changes. */
+  useEffect(() => {
+    const onPopState = () => {
+      const s = readUrlState();
+      setSearch(s.search);
+      setGenre(s.search ? null : s.genre);
+      setSort(s.sort);
+      historyOpenId.current = s.id ? Number(s.id) : null;
+      if (s.id) {
+        fetchById(Number(s.id)).then((media) => { if (media) setOpen(media); }).catch(() => {});
+      } else {
+        setOpen(null);
+      }
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
 
   /* ── browse ─────────────────────────────────────────────── */
   const load = useCallback(async ({ genre = null, search = '', sort = 'TRENDING_DESC' }) => {

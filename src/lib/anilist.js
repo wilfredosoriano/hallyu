@@ -104,6 +104,45 @@ export async function fetchById(id) {
   return data.Media;
 }
 
+const RELATION_LABELS = {
+  PREQUEL: 'Prequel',
+  SEQUEL: 'Sequel',
+  SIDE_STORY: 'Side story',
+  PARENT: 'Parent story',
+  ALTERNATIVE: 'Alternative',
+  SPIN_OFF: 'Spin-off',
+  SUMMARY: 'Summary',
+  FULL_STORY: 'Full story',
+  COMPILATION: 'Compilation',
+  CONTAINS: 'Contains',
+};
+
+/**
+ * Real, curated season/continuity links (sequel, prequel, side story, …) —
+ * distinct from `recommendations`, which is just AniList's algorithmic
+ * "people who liked this also liked" graph and says nothing about whether
+ * a second season actually exists.
+ */
+export async function fetchRelations(id) {
+  const data = await gql(
+    `query ($id: Int) {
+      Media(id: $id) {
+        relations {
+          edges {
+            relationType(version: 2)
+            node { type ${MEDIA_FIELDS} }
+          }
+        }
+      }
+    }`,
+    { id }
+  );
+
+  return (data.Media.relations.edges || [])
+    .filter((e) => e.node.type === 'ANIME' && hasCover(e.node) && RELATION_LABELS[e.relationType])
+    .map((e) => ({ label: RELATION_LABELS[e.relationType], media: e.node }));
+}
+
 /** AniList's own curated "if you liked this" graph, for the detail sheet. */
 export async function fetchRecommendations(id) {
   const data = await gql(

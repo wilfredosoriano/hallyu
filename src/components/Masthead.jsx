@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Sun, Moon } from 'lucide-react';
 import { GENRES, quickSearch, fetchById } from '../lib/anilist.js';
 import { starParts, displayTitle } from '../lib/format.js';
 
@@ -176,7 +177,7 @@ export default function Masthead({ activeGenre, onGenre, onSearch, onOpenMedia, 
             aria-label={theme === 'dark' ? 'Switch to day edition' : 'Switch to night edition'}
             title={theme === 'dark' ? 'Day edition' : 'Night edition'}
           >
-            {theme === 'dark' ? '☀' : '☾'}
+            {theme === 'dark' ? <Sun size={17} strokeWidth={2} /> : <Moon size={17} strokeWidth={2} />}
           </button>
         </div>
 

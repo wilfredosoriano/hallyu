@@ -1,10 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
+import { X, Play, Check, Plus } from 'lucide-react';
 import { starParts, cleanText, legalLinks, searchLinks, displayTitle } from '../lib/format.js';
-import { fetchRecommendations } from '../lib/anilist.js';
+import { fetchRecommendations, fetchRelations } from '../lib/anilist.js';
+
+const RELATION_ORDER = ['Prequel', 'Sequel', 'Parent story', 'Side story', 'Spin-off', 'Alternative', 'Full story', 'Summary', 'Compilation', 'Contains'];
 
 export default function DetailSheet({ media, onClose, onOpenRelated, onSave, isSaved }) {
   const closeRef = useRef(null);
   const [related, setRelated] = useState(null);
+  const [seasons, setSeasons] = useState(null);
 
   useEffect(() => {
     closeRef.current?.focus();
@@ -24,6 +28,21 @@ export default function DetailSheet({ media, onClose, onOpenRelated, onSave, isS
     fetchRecommendations(media.id)
       .then((list) => { if (live) setRelated(list.slice(0, 6)); })
       .catch(() => { if (live) setRelated([]); });
+    return () => { live = false; };
+  }, [media.id]);
+
+  useEffect(() => {
+    let live = true;
+    setSeasons(null);
+    fetchRelations(media.id)
+      .then((list) => {
+        if (!live) return;
+        const sorted = [...list].sort(
+          (a, b) => RELATION_ORDER.indexOf(a.label) - RELATION_ORDER.indexOf(b.label)
+        );
+        setSeasons(sorted);
+      })
+      .catch(() => { if (live) setSeasons([]); });
     return () => { live = false; };
   }, [media.id]);
 
@@ -59,7 +78,7 @@ export default function DetailSheet({ media, onClose, onOpenRelated, onSave, isS
             )}
           </div>
           <button className="x" onClick={onClose} ref={closeRef} aria-label="Close details">
-            ✕
+            <X size={18} strokeWidth={2.25} />
           </button>
         </div>
 
@@ -74,7 +93,7 @@ export default function DetailSheet({ media, onClose, onOpenRelated, onSave, isS
             )}
             {onSave && (
               <button className={`btn ghost sheet-save${saved ? ' on' : ''}`} onClick={() => onSave(media)}>
-                {saved ? '✓ Saved' : '+ Want to watch'}
+                {saved ? <><Check size={15} /> Saved</> : <><Plus size={15} /> Want to watch</>}
               </button>
             )}
             {trailerUrl && (
@@ -84,7 +103,7 @@ export default function DetailSheet({ media, onClose, onOpenRelated, onSave, isS
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                ▶ Trailer
+                <Play size={14} fill="currentColor" /> Trailer
               </a>
             )}
           </div>
@@ -121,6 +140,26 @@ export default function DetailSheet({ media, onClose, onOpenRelated, onSave, isS
             </div>
           </div>
         </div>
+
+        {seasons !== null && seasons.length > 0 && (
+          <div className="related">
+            <p className="mono" style={{ padding: '0 20px' }}>Seasons &amp; related</p>
+            <div className="related-row">
+              {seasons.map(({ label, media: m }) => (
+                <button
+                  key={m.id}
+                  className="related-item"
+                  onClick={() => onOpenRelated ? onOpenRelated(m) : null}
+                  aria-label={`Open details for ${displayTitle(m)} (${label})`}
+                >
+                  <span className="related-tag">{label}</span>
+                  <img src={m.coverImage.large} alt="" loading="lazy" />
+                  <span>{displayTitle(m)}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {related !== null && related.length > 0 && (
           <div className="related">
