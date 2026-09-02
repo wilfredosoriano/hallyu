@@ -3,7 +3,7 @@ import { buildOgHtml } from '../../server/og.js';
 /** Cloudflare Pages Function. */
 export async function onRequestGet(context) {
   const url = new URL(context.request.url);
-  const html = await buildOgHtml({ id: url.searchParams.get('id'), siteUrl: url.origin });
+  const html = await buildOgHtml({ id: url.searchParams.get('id'), siteUrl: url.origin, apiKey: context.env.TMDB_API_KEY });
   return new Response(html, {
     status: 200,
     headers: {

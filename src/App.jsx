@@ -5,7 +5,7 @@ import AskPanel from './components/AskPanel.jsx';
 import DetailSheet from './components/DetailSheet.jsx';
 import ToastStack from './components/Toast.jsx';
 import { Grid, Skeletons, Loading, Note, SectionHead, SortControl } from './components/Grid.jsx';
-import { fetchGrid, fetchCandidates, fetchCandidatesForMedia, fetchById, fetchFeaturedPool, toPromptRows, SORTS } from './lib/anilist.js';
+import { fetchGrid, fetchCandidates, fetchCandidatesForMedia, fetchById, fetchFeaturedPool, toPromptRows, SORTS, DEFAULT_SORT } from './lib/tmdb.js';
 import { pickDaily } from './lib/dailyPick.js';
 import { getCachedRecommendation, setCachedRecommendation, pruneBecauseSavedCache } from './lib/becauseSavedCache.js';
 import { useSaved } from './hooks/useSaved.js';
@@ -22,7 +22,7 @@ function readUrlState() {
   return {
     search: params.get('search') || '',
     genre: params.get('genre') || null,
-    sort: sort && SORT_VALUES.has(sort) ? sort : 'TRENDING_DESC',
+    sort: sort && SORT_VALUES.has(sort) ? sort : DEFAULT_SORT,
     id: params.get('id'),
   };
 }
@@ -89,7 +89,7 @@ export default function App() {
      something new doesn't reshuffle it mid-session. Results are cached
      per title in localStorage so re-landing on a seed we've already
      ranked (a later session, or the same seed surviving a re-pick check)
-     doesn't re-hit AniList + the AI, and the cache entry is dropped the
+     doesn't re-hit TMDb + the AI, and the cache entry is dropped the
      moment its title is unsaved.
 
      Gated on `savedReady`: `saved` starts as [] for one render while
@@ -137,7 +137,7 @@ export default function App() {
           setBecauseSavedState('error');
           return;
         }
-        const { intro, picks, degraded } = await rankPool(`More anime like ${displayTitle(reference)}`, pool);
+        const { intro, picks, degraded } = await rankPool(`More dramas like ${displayTitle(reference)}`, pool);
         if (cancelled) return;
         const result = { intro, picks, degraded, ranked: !degraded };
         setCachedRecommendation(reference.id, result);
@@ -166,7 +166,7 @@ export default function App() {
     const params = new URLSearchParams();
     if (search) params.set('search', search);
     else if (genre) params.set('genre', genre);
-    if (sort !== 'TRENDING_DESC') params.set('sort', sort);
+    if (sort !== DEFAULT_SORT) params.set('sort', sort);
     if (open) params.set('id', open.id);
     else if (deepLinkId.current) params.set('id', deepLinkId.current);
     const qs = params.toString();
@@ -205,7 +205,7 @@ export default function App() {
   }, []);
 
   /* ── browse ─────────────────────────────────────────────── */
-  const load = useCallback(async ({ genre = null, search = '', sort = 'TRENDING_DESC' }) => {
+  const load = useCallback(async ({ genre = null, search = '', sort = DEFAULT_SORT }) => {
     setGridState('loading');
     setGridError('');
     setPage(1);
@@ -324,7 +324,7 @@ export default function App() {
   }
 
   /* Refines the SAME candidate pool instead of pulling a fresh one from
-     AniList — cheaper, and lets "more like #3, but shorter" actually work
+     TMDb — cheaper, and lets "more like #3, but shorter" actually work
      against what's already on screen. */
   async function refine() {
     const q = followUp.trim();

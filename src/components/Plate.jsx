@@ -3,7 +3,7 @@ import { Bookmark } from 'lucide-react';
 import { starParts, displayTitle, cleanText } from '../lib/format.js';
 import { useInView } from '../hooks/useInView.js';
 
-/** One anime as a poster card. `rank` is only passed for ranked AI results. */
+/** One K-drama as a poster card. `rank` is only passed for ranked AI results. */
 export default function Plate({ media, rank, index = 0, caption, saved, onOpen, onSave }) {
   const [loaded, setLoaded] = useState(false);
   const [ref, inView] = useInView();

@@ -1,5 +1,5 @@
 import Plate from './Plate.jsx';
-import { SORTS } from '../lib/anilist.js';
+import { SORTS } from '../lib/tmdb.js';
 
 export function Grid({ items, ranked = false, onOpen, onSave, isSaved, horizontal = false }) {
   return (

@@ -1,12 +1,12 @@
 /**
  * Caches "Because you saved X" AI results per reference title, so revisiting
  * the same seed (e.g. a random re-pick landing on a title we've already
- * ranked for) doesn't re-hit AniList + the AI on every load. Entries are
+ * ranked for) doesn't re-hit TMDb + the AI on every load. Entries are
  * pruned whenever a title drops out of the want-to-watch list — there's no
  * reason to keep a recommendation around for something no longer saved.
  */
 
-const KEY = 'tsugi:becauseSavedCache';
+const KEY = 'hallyu:becauseSavedCache';
 
 function readCache() {
   try {

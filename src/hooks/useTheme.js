@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
-const KEY = 'tsugi:theme';
+const KEY = 'hallyu:theme';
 
 function initial() {
   try {

@@ -1,14 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { X, Play, Check, Plus, Search, ExternalLink } from 'lucide-react';
 import { starParts, cleanText, legalLinks, searchLinks, displayTitle } from '../lib/format.js';
-import { fetchRecommendations, fetchRelations } from '../lib/anilist.js';
-
-const RELATION_ORDER = ['Prequel', 'Sequel', 'Parent story', 'Side story', 'Spin-off', 'Alternative', 'Full story', 'Summary', 'Compilation', 'Contains'];
+import { fetchRecommendations } from '../lib/tmdb.js';
 
 export default function DetailSheet({ media, onClose, onOpenRelated, onSave, isSaved }) {
   const closeRef = useRef(null);
   const [related, setRelated] = useState(null);
-  const [seasons, setSeasons] = useState(null);
 
   useEffect(() => {
     closeRef.current?.focus();
@@ -31,25 +28,10 @@ export default function DetailSheet({ media, onClose, onOpenRelated, onSave, isS
     return () => { live = false; };
   }, [media.id]);
 
-  useEffect(() => {
-    let live = true;
-    setSeasons(null);
-    fetchRelations(media.id)
-      .then((list) => {
-        if (!live) return;
-        const sorted = [...list].sort(
-          (a, b) => RELATION_ORDER.indexOf(a.label) - RELATION_ORDER.indexOf(b.label)
-        );
-        setSeasons(sorted);
-      })
-      .catch(() => { if (live) setSeasons([]); });
-    return () => { live = false; };
-  }, [media.id]);
-
   const title = displayTitle(media);
   const stars = starParts(media.averageScore);
   const studio = media.studios?.nodes?.[0]?.name;
-  const links = legalLinks(media);
+  const links = legalLinks(media, title);
   const directSites = new Set(links.map((l) => l.site.toLowerCase()));
   const searches = searchLinks(title).filter((s) => !directSites.has(s.site.toLowerCase()));
   const synopsis = cleanText(media.description);
@@ -74,7 +56,7 @@ export default function DetailSheet({ media, onClose, onOpenRelated, onSave, isS
           <div>
             <h3 className="display">{title}</h3>
             {media.title.native && (
-              <div className="native jp" style={{ marginTop: 5 }}>{media.title.native}</div>
+              <div className="native kr" style={{ marginTop: 5 }}>{media.title.native}</div>
             )}
           </div>
           <button className="x" onClick={onClose} ref={closeRef} aria-label="Close details">
@@ -141,26 +123,6 @@ export default function DetailSheet({ media, onClose, onOpenRelated, onSave, isS
             </div>
           </div>
         </div>
-
-        {seasons !== null && seasons.length > 0 && (
-          <div className="related">
-            <p className="mono" style={{ padding: '0 20px' }}>Seasons &amp; related</p>
-            <div className="related-row">
-              {seasons.map(({ label, media: m }) => (
-                <button
-                  key={m.id}
-                  className="related-item"
-                  onClick={() => onOpenRelated ? onOpenRelated(m) : null}
-                  aria-label={`Open details for ${displayTitle(m)} (${label})`}
-                >
-                  <span className="related-tag">{label}</span>
-                  <img src={m.coverImage.large} alt="" loading="lazy" />
-                  <span>{displayTitle(m)}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
 
         {related !== null && related.length > 0 && (
           <div className="related">

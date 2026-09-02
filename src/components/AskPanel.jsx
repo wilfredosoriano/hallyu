@@ -1,10 +1,10 @@
 import { useTypedPlaceholder } from '../hooks/useTypedPlaceholder.js';
 
 const EXAMPLES = [
-  { label: 'similar to Black Clover', text: "Something similar to Black Clover, but with better fights" },
-  { label: 'short, one weekend', text: 'A short series I can finish in one weekend, under 15 episodes' },
-  { label: 'clever thrillers', text: 'Psychological thrillers where the main character is genuinely clever' },
-  { label: 'calm before bed', text: 'Something calm and beautiful to watch before bed, low stakes' },
+  { label: 'similar to Crash Landing on You', text: "Something similar to Crash Landing on You, but with less melodrama" },
+  { label: 'short, one weekend', text: 'A short series I can finish in one weekend, under 12 episodes' },
+  { label: 'clever thrillers', text: 'Mystery thrillers where the main character is genuinely clever' },
+  { label: 'calm before bed', text: 'Something calm and heartwarming to watch before bed, low stakes' },
 ];
 
 const PLACEHOLDER_PHRASES = EXAMPLES.map((ex) => ex.text);
@@ -15,7 +15,7 @@ export default function AskPanel({ value, onChange, onAsk, busy }) {
   return (
     <section className="ask">
       <div className="ask-head">
-        <span className="n" aria-hidden="true">問</span>
+        <span className="n" aria-hidden="true">문</span>
         <h2>Ask for a recommendation</h2>
       </div>
 

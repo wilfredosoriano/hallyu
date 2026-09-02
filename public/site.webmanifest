@@ -1,7 +1,7 @@
 {
-  "name": "Tsugi — what to watch next",
-  "short_name": "Tsugi",
-  "description": "Anime discovery with AI recommendations grounded in the real AniList catalog.",
+  "name": "Hallyu — what K-drama to watch next",
+  "short_name": "Hallyu",
+  "description": "Korean drama discovery with AI recommendations grounded in the real TMDb catalog.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0a0a0f",

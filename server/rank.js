@@ -6,7 +6,7 @@
  *   functions/api/recommend.js  → Cloudflare Pages Function (Workers)
  *   vite.config.js              → local dev server
  *
- * Design rule: the model ranks and explains a pool of real AniList entries.
+ * Design rule: the model ranks and explains a pool of real TMDb entries.
  * It never supplies a title, a cover, or a score. Anything it returns that
  * isn't in the pool gets dropped by the caller.
  */
@@ -19,7 +19,7 @@ const MAX_POOL = 60;
 const PICKS = 10;
 
 const SYSTEM_PROMPT = [
-  'You recommend anime, choosing ONLY from the catalog rows provided.',
+  'You recommend Korean dramas (K-dramas), choosing ONLY from the catalog rows provided.',
   'Never invent a title or an id. Never return an id that is not in the list.',
   `Pick the ${PICKS} best matches for the request, best first.`,
   'Reply with JSON only — no markdown fence, no commentary — shaped exactly:',
@@ -35,7 +35,7 @@ function fail(status, message) {
 }
 
 /**
- * Compact one AniList entry into a single prompt line.
+ * Compact one TMDb entry into a single prompt line.
  * `pool` arrives from the client, so every field is trusted-but-verify: a
  * crafted POST straight to this endpoint (bypassing the UI) could otherwise
  * pad each row with huge strings and multiply that by MAX_POOL rows to blow

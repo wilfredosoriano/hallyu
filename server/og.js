@@ -1,7 +1,7 @@
 /**
- * Server-rendered Open Graph/Twitter Card HTML for a single shared anime
- * link — so pasting a Tsugi URL into Discord/Slack/X/etc. shows its title
- * and cover art instead of a blank card.
+ * Server-rendered Open Graph/Twitter Card HTML for a single shared drama
+ * link — so pasting a Hallyu URL into Discord/Slack/X/etc. shows its title
+ * and poster art instead of a blank card.
  *
  * A social-media crawler fetches raw HTML and reads <meta> tags; it never
  * runs the SPA's JS, so a client-side-only title/meta update (the usual SPA
@@ -16,40 +16,36 @@
 
 import { cleanText, displayTitle } from '../src/lib/format.js';
 
-const SITE_NAME = 'Tsugi';
-const SITE_DESCRIPTION = 'Browse anime by genre and ask for recommendations grounded in the real AniList catalog.';
+const SITE_NAME = 'Hallyu';
+const SITE_DESCRIPTION = 'Browse Korean dramas by genre and ask for recommendations grounded in the real TMDb catalog.';
 
 function esc(s) {
   return String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 }
 
-async function fetchMedia(id) {
-  const res = await fetch('https://graphql.anilist.co', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    body: JSON.stringify({
-      query: `query ($id: Int) {
-        Media(id: $id) {
-          title { romaji english }
-          description(asHtml: false)
-          coverImage { extraLarge large }
-        }
-      }`,
-      variables: { id },
-    }),
-  });
+async function fetchMedia(id, apiKey) {
+  if (!apiKey) return null;
+  const url = new URL(`https://api.themoviedb.org/3/tv/${id}`);
+  url.searchParams.set('api_key', apiKey);
+  const res = await fetch(url);
   if (!res.ok) return null;
-  const json = await res.json();
-  if (json.errors?.length) return null;
-  return json.data.Media;
+  const show = await res.json();
+  return {
+    title: { english: show.name, romaji: show.original_name },
+    description: show.overview,
+    coverImage: {
+      extraLarge: show.poster_path ? `https://image.tmdb.org/t/p/w780${show.poster_path}` : null,
+      large: show.poster_path ? `https://image.tmdb.org/t/p/w500${show.poster_path}` : null,
+    },
+  };
 }
 
-export async function buildOgHtml({ id, siteUrl }) {
+export async function buildOgHtml({ id, siteUrl, apiKey }) {
   const numId = Number(id);
-  const media = Number.isInteger(numId) && numId > 0 ? await fetchMedia(numId).catch(() => null) : null;
+  const media = Number.isInteger(numId) && numId > 0 ? await fetchMedia(numId, apiKey).catch(() => null) : null;
 
   const pageUrl = media ? `${siteUrl}/?id=${numId}` : siteUrl;
-  const title = media ? displayTitle(media) : `${SITE_NAME} — what to watch next`;
+  const title = media ? displayTitle(media) : `${SITE_NAME} — what K-drama to watch next`;
   const description = media
     ? (cleanText(media.description).slice(0, 200) || SITE_DESCRIPTION)
     : SITE_DESCRIPTION;

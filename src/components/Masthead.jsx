@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Sun, Moon } from 'lucide-react';
-import { GENRES, DEMOGRAPHICS, quickSearch, fetchById } from '../lib/anilist.js';
+import { GENRES, DEMOGRAPHICS, quickSearch, fetchById } from '../lib/tmdb.js';
 import { starParts, displayTitle } from '../lib/format.js';
 
 const DEBOUNCE_MS = 260;
@@ -180,10 +180,10 @@ export default function Masthead({ activeGenre, onGenre, onSearch, onOpenMedia, 
       <div className="wrap">
         <div className="mast">
           <div className="logo">
-            <b>Tsugi</b>
-            <span className="kanji">次</span>
+            <b>Hallyu</b>
+            <span className="mark">류</span>
           </div>
-          <p className="tagline">A reading room for deciding what you watch next.</p>
+          <p className="tagline">A reading room for deciding what K-drama you watch next.</p>
           <button
             className="theme-toggle"
             onClick={onToggleTheme}
@@ -202,8 +202,8 @@ export default function Masthead({ activeGenre, onGenre, onSearch, onOpenMedia, 
               onChange={(e) => { setTerm(e.target.value); setOpen(true); }}
               onFocus={() => setOpen(true)}
               onKeyDown={onKeyDown}
-              placeholder="Search a title — Frieren, Vinland Saga, Monster…"
-              aria-label="Search anime by title"
+              placeholder="Search a title — Crash Landing on You, Reply 1988…"
+              aria-label="Search Korean dramas by title"
               role="combobox"
               aria-expanded={showDropdown}
               aria-autocomplete="list"

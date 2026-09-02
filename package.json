@@ -1,9 +1,9 @@
 {
-  "name": "tsugi",
+  "name": "hallyu",
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "Anime discovery with AI recommendations grounded in the AniList catalog",
+  "description": "Korean drama discovery with AI recommendations grounded in the TMDb catalog",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

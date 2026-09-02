@@ -11,7 +11,7 @@ import { buildOgHtml } from './server/og.js';
  */
 function devApi(env) {
   return {
-    name: 'tsugi-dev-api',
+    name: 'hallyu-dev-api',
     configureServer(server) {
       server.middlewares.use('/api/recommend', async (req, res) => {
         if (req.method !== 'POST') {
@@ -47,7 +47,11 @@ function devApi(env) {
       // mounted here so it's curl-able during local dev too.
       server.middlewares.use('/api/og', async (req, res) => {
         const id = new URL(req.url, 'http://x').searchParams.get('id');
-        const html = await buildOgHtml({ id, siteUrl: `http://localhost:${server.config.server.port}` });
+        const html = await buildOgHtml({
+          id,
+          siteUrl: `http://localhost:${server.config.server.port}`,
+          apiKey: env.TMDB_API_KEY,
+        });
         res.setHeader('Content-Type', 'text/html; charset=utf-8');
         res.end(html);
       });

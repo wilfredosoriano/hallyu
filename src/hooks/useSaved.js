@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
-const KEY = 'tsugi:saved';
+const KEY = 'hallyu:saved';
 
 /**
  * Want-to-watch list, persisted to localStorage.
