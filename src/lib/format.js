@@ -35,6 +35,7 @@ const PLATFORMS = [
   { site: 'Prime Video', match: /amazon|prime video/i, url: (q) => `https://www.amazon.com/s?k=${encodeURIComponent(q)}&i=instant-video` },
   { site: 'Apple TV', match: /apple tv/i, url: (q) => `https://tv.apple.com/search?term=${encodeURIComponent(q)}` },
   { site: 'Tving', match: /tving/i, url: (q) => `https://www.tving.com/search/integration?query=${encodeURIComponent(q)}` },
+  { site: 'Sflix', match: /sflix/i, url: (q) => `https://www.xtubeflix.com/?s=${encodeURIComponent(q)}` },
 ];
 
 /** Verified: services TMDb's watch-provider data confirms carry this title. */
